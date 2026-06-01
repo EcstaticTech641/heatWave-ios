@@ -1,0 +1,33 @@
+# Dependencies for heatWave project
+
+# PDF / Text extraction
+PyMuPDF
+pdfplumber
+
+# OCR Fallback
+pdf2image
+pytesseract
+
+# Data validation
+pydantic
+
+# PDF Generation
+reportlab
+
+# Desktop UI (removed for headless server)
+flask
+# pywebview
+
+# Web UI (development only — not needed for .exe)
+# streamlit
+
+# Production / Multi-user
+Flask-Session
+waitress
+python-dotenv
+redis
+rq
+flask-limiter
+
+# Testing
+pytest
