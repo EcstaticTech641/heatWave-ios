@@ -1,273 +1,80 @@
-# HeatWave Project - Implementation Summary
+# Technical Implementation Summary: iOS-Centric Architecture
 
-## ✓ Project Status: CORE PIPELINE COMPLETE
-
-The heatWave project has successfully implemented the complete text-to-heat-sheet pipeline. All core components are functional, tested, and production-ready.
+This document outlines the technical architecture of the `heatWave-ios` application. It highlights the mapping between the Python reference implementation and the native SwiftUI Swift modules, detailing the algorithms and rules governing extraction, parsing, seeding, and PDF generation.
 
 ---
 
-## 📊 What's Been Built
+## Core System Architecture
 
-### 1. **PDF Text Extraction** ✓
-- **Module:** `src/parser/extractor.py`  
-- **Features:**
-  - Intelligent two-column layout parsing
-  - Handles both left and right columns in psych sheets
-  - Preserves text order and structure
-- **Technology:** pdfplumber
-- **Status:** Fully tested with real meet data
-
-### 2. **Event & Entry Parsing** ✓
-- **Module:** `src/parser/extractor.py`
-- **Features:**
-  - Event header parsing (number, gender, distance, stroke)
-  - Individual swimmer entry parsing (name, age, team, seed time)
-  - Relay team entry parsing (team name, seed time, optional swimmers)
-  - Seed time validation and normalization (MM:SS.XX or NT format)
-- **Data Models:** `src/models/schemas.py`
-  - `Event` - Complete event with parsed entries
-  - `Entry` - Individual swimmer entry
-  - `RelayEntry` - Relay team entry
-- **Status:** Handles 702 entries from test meet with 100% accuracy
-
-### 3. **USA Swimming Heat Seeding** ✓
-- **Module:** `src/seeding/seeder.py`
-- **Features:**
-  - Implements official USA Swimming prelim seeding rules
-  - Center-out lane placement (fastest swimmers in center lanes)
-  - Optimal heat distribution (7.0 entries/heat average)
-  - Handles both relay and individual events
-- **Rules Implemented:**
-  - Heats filled slowest to fastest
-  - Lane pattern: [4, 5, 3, 6, 2, 7, 1, 8] for 8-lane pools
-  - Configurable pool lanes
-- **Status:** Seeded 702 entries into 100 heats correctly
-
-### 4. **PDF Heat Sheet Generation** ✓
-- **Module:** `src/core/pdf_generator.py`
-- **Features:**
-  - Generates professional, printable heat sheets
-  - Single event and full meet PDF generation
-  - Clean table layouts with proper formatting
-  - Team colors and styling
-  - Cover pages and page breaks
-- **Technology:** ReportLab (pure Python, no system dependencies)
-- **Output Quality:**
-  - Single event PDFs: 2.7-5.7 KB
-  - Full meet PDFs: ~84 KB (29 pages for 28 events)
-  - Print-ready format
-- **Status:** Generates production-quality PDFs
-
----
-
-## 📈 Test Results
-
-### Integration Test (All Components)
-```
-Input:  78.3 KB psych sheet PDF
-Events: 28 (4 relay, 24 individual)
-Entries: 702
-Output: 189.9 KB PDFs
-
-✓ Text extraction: 55,890 characters
-✓ Event parsing: 100% accuracy
-✓ Heat seeding: 100 heats, optimally distributed
-✓ PDF generation: 6 files created
-✓ All validations: PASSED
-```
-
-### Quality Metrics
-- ✅ All 702 entries assigned exactly once
-- ✅ No duplicate or missing assignments
-- ✅ Lane distribution valid (1-8 per heat)
-- ✅ USA Swimming seeding rules applied correctly
-- ✅ Heat distribution optimal (7.0 avg entries/heat)
-- ✅ PDFs printable and coach-ready
-
----
-
-## 🗂️ Project Structure
+The application is structured into four distinct layers. These layers are implemented in Python for reference/testing and in Swift for native, offline execution on iOS devices:
 
 ```
-heatWave/
-├── src/
-│   ├── models/schemas.py          # Data models
-│   ├── parser/extractor.py        # PDF → Events
-│   ├── seeding/seeder.py          # Heat seeding algorithm
-│   ├── core/pdf_generator.py      # Heat sheets → PDFs
-│   └── ui/                        # (Coming next)
-├── tests/
-├── data/
-│   ├── samples/                   # Test PDFs
-│   └── output/                    # Generated heat sheets
-├── test_parsing.py                # Parser tests
-├── test_seeding.py                # Seeding tests
-├── test_pdf_generation.py         # PDF generation tests
-├── test_integration.py            # Full pipeline tests
-├── demo_seeding.py                # Seeding demonstration
-└── demo_full_pipeline.py          # Complete pipeline demo
+[PDF Input] 
+    │
+    ▼
+1. Extraction Layer ──► Splits two-column pages into independent reading zones
+    │
+    ▼
+2. Parsing Layer    ──► Extracts events and entries via regular expressions
+    │
+    ▼
+3. Seeding Layer    ──► Assigns heats and center-out lanes (USA Swimming rules)
+    │
+    ▼
+4. Generation Layer ──► Renders the printable heat sheet PDF
 ```
 
 ---
 
-## 🚀 How to Use the Pipeline
+## Component Mappings
 
-### Basic Usage
-```python
-from src.parser.extractor import extract_text_from_pdf, parse_events_from_text
-from src.seeding.seeder import seed_event
-from src.core.pdf_generator import generate_full_meet_pdf
-
-# 1. Extract and parse
-text = extract_text_from_pdf("psych_sheet.pdf")
-events = parse_events_from_text(text)
-
-# 2. Seed all events
-heat_sheets = [seed_event(event) for event in events]
-
-# 3. Generate PDFs
-generate_full_meet_pdf(
-    heat_sheets,
-    "output/heat_sheets.pdf",
-    meet_title="My Meet",
-    meet_date="01/15/2025"
-)
-```
-
-### Running Demonstrations
-```bash
-# Full pipeline demo
-python demo_full_pipeline.py
-
-# Individual component tests
-python test_parsing.py
-python test_seeding.py
-python test_pdf_generation.py
-
-# Integration test
-python test_integration.py
-```
+| Component | Python Reference Class/Module | iOS Native Swift Class | Implementation Details |
+|---|---|---|---|
+| **Data Models** | `src/models/schemas.py` | `Models.swift` | Defines structures for Swimmer, Entry, RelayEntry, Event, Assignment, and HeatSheet. |
+| **PDF Extraction** | `src/parser/extractor.py` (`extract_text_from_pdf`) | `PDFExtractor.swift` | Crops page widths to split columns and avoid interleaved text. |
+| **Data Parsing** | `src/parser/extractor.py` (`parse_events_from_text`) | `RegexParser.swift` | Iterates over lines to match event headers and entry patterns. |
+| **Seeding Engine** | `src/seeding/seeder.py` | `SeedingEngine.swift` | Orders entries, sets heat counts, and maps lanes. |
+| **PDF Renderer** | `src/core/pdf_generator.py` | `PDFGenerator.swift` | Employs Core Graphics / UIKit rendering on iOS. |
 
 ---
 
-## 📋 Current Capabilities
+## Technical Specifications by Phase
 
-✅ **Supports:**
-- USA Swimming psych sheets (standard formats)
-- Two-column layout PDFs
-- Both relay and individual events
-- Standard 8-lane pools (configurable)
-- Professional PDF output
-- Batch processing of multiple events
+### 1. PDF Text Extraction
+- **Problem:** Standard PDF text readers extract characters line-by-line across the entire page, resulting in interleaved text when reading two-column psych sheets.
+- **Reference Solution:** Uses `pdfplumber` to crop the page into left and right bounding boxes (`width / 2`), extract text from each independently, and merge them.
+- **iOS Implementation:** Employs Apple's `PDFKit` framework. Using `PDFPage.string(for: CGRect)`, the extractor defines two bounding boxes:
+  - Left Column Rect: `[x: 0, y: 0, width: page_width / 2, height: page_height]`
+  - Right Column Rect: `[x: page_width / 2, y: 0, width: page_width / 2, height: page_height]`
+  The text from both rectangles is extracted and merged. This is supported in iOS 16+.
 
-✅ **Handles:**
-- 702+ entries per meet
-- NT (no time) entries
-- Duplicate team entries (A, B, C teams)
-- Multi-word names and team codes
-- Standard seed time formats
+### 2. Regular Expression Parsing
+- **Patterns:** Regex rules detect event boundaries (such as `#1 Girls 10 & Under 50 Yard Freestyle`) and swimmer lines (e.g., `1 Smith, Jane 10 BSS-FL 28.50`).
+- **Data Schemas:** Validates that ages are numeric, seed times are in standard swim formats (e.g., `MM:SS.XX`, `SS.XX`, or `NT` for No Time), and relay teams are grouped.
+- **Robustness:** Handles names with multiple spaces, varied team abbreviations, and spacing tolerances across different meet management software exports.
 
----
+### 3. USA Swimming Seeding Rules
+- **Seeding Order:** Entries are sorted from fastest to slowest.
+- **Lane Placement Pattern:** Centers the fastest swimmers. For standard 8-lane pools, the assignment order is:
+  - Lane 4: 1st seed in heat
+  - Lane 5: 2nd seed in heat
+  - Lane 3: 3rd seed in heat
+  - Lane 6: 4th seed in heat
+  - Lane 2: 5th seed in heat
+  - Lane 7: 6th seed in heat
+  - Lane 1: 7th seed in heat
+  - Lane 8: 8th seed in heat
+- **Heat Allocation:** The total number of heats is computed by dividing the number of entries by the pool lane count. The seeding engine balances the remaining entries to prevent single-swimmer heats.
 
-## 🎯 Next Steps (Post-MVP)
-
-### Phase 1: UI Implementation
-- [ ] Streamlit interface for web/desktop
-- [ ] Drag-and-drop PDF upload
-- [ ] Live preview of parsed events
-- [ ] Custom meet settings (name, date, lanes)
-
-### Phase 2: Advanced Features
-- [ ] Manual entry review/editing
-- [ ] Scratch/no-show handling
-- [ ] Custom seeding options
-- [ ] Export to Hy-Tek/Meet Maestro formats
-
-### Phase 3: Polish & Deployment
-- [ ] Error handling and user feedback
-- [ ] OCR fallback for scanned PDFs
-- [ ] PyInstaller packaging (desktop app)
-- [ ] Docker containerization
+### 4. PDF Heat Sheet Generation
+- **Reference PDF Output:** Built using `ReportLab`, producing structured tabular PDFs.
+- **iOS PDF Output:** Uses `UIGraphicsPDFRenderer` to render vectors and text onto a print-ready canvas. Font selection utilizes native iOS system fonts (Helvetica/San Francisco) to guarantee consistent rendering.
 
 ---
 
-## 📦 Dependencies
+## Performance and Constraints
 
-Core requirements installed and tested:
-- `pdfplumber` - PDF text extraction
-- `pydantic` - Data validation
-- `reportlab` - PDF generation
-- `pytest` - Testing
-
-Optional (for future phases):
-- `streamlit` - Web UI
-- `pytesseract` + `pdf2image` - OCR support
-- `fastapi` - REST API
-
----
-
-## ✨ Architecture Highlights
-
-### Modular Design
-- **Extraction Layer** - PDF → raw text
-- **Parsing Layer** - Raw text → structured data
-- **Seeding Layer** - Data → heat assignments
-- **Generation Layer** - Heats → printable PDFs
-
-### Extensibility
-- Data models use Pydantic (easy to extend)
-- Seeding algorithm implements standard rules (easy to customize)
-- PDF generation is configurable
-- All functions have clear APIs
-
-### Robustness
-- Input validation at each layer
-- Error handling for malformed data
-- Comprehensive test coverage
-- Production-ready code quality
-
----
-
-## 📊 Performance
-
-- **Processing Speed:** Complete 28-event meet in <5 seconds
-- **Output Quality:** Professional, print-ready PDFs
-- **Scalability:** Tested with 702 entries, handles larger meets
-- **Memory Usage:** Efficient (all operations fit in standard RAM)
-
----
-
-## 🎓 Learning Resources
-
-The code includes:
-- **Inline documentation** - Function docstrings explain purpose and usage
-- **Type hints** - Full type annotations for IDE support
-- **Test examples** - Working code examples in test files
-- **Demo scripts** - Real-world usage examples
-
----
-
-## 🔐 Quality Assurance
-
-All components have been:
-- ✅ Unit tested individually
-- ✅ Integration tested end-to-end
-- ✅ Validated with real meet data
-- ✅ Verified for correctness
-- ✅ Tested for edge cases
-
----
-
-## 📝 Next Immediate Step
-
-**Recommended:** Implement Streamlit UI to make the tool accessible to coaches
-- Upload psych sheet PDF
-- Review parsed events (with edit capability)
-- Customize meet settings
-- Generate and download heat sheets
-
-This would transform the pipeline from a Python library into a user-friendly application.
-
----
-
-**Status:** ✅ Core pipeline production-ready and fully functional
+- **On-Device Execution:** No external APIs or web backend servers are involved. All processing occurs locally on the iOS device.
+- **File I/O:** Generated PDFs are stored within the app's secure `.documentDirectory` to comply with iOS security policies.
+- **Scanned PDF Guard:** The extraction pipeline checks the character count of the first three pages of any uploaded document. If fewer than 100 characters are found, the process aborts with the following error:
+  `"This PDF appears to be image-based. Scanned PDFs are not yet supported."`

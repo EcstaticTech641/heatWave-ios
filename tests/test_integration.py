@@ -2,12 +2,15 @@
 Comprehensive integration test of the complete heatWave pipeline.
 Tests: Extraction → Parsing → Seeding → PDF Generation
 """
+import os
+import pytest
 from pathlib import Path
 from src.parser.extractor import extract_text_from_pdf, parse_events_from_text
 from src.seeding.seeder import seed_event, format_heat_sheet
 from src.core.pdf_generator import generate_heat_sheet_pdf, generate_full_meet_pdf
 
 
+@pytest.mark.skipif(not os.path.exists("data/samples/1769543968773-7a7qa8q6s.pdf"), reason="Sample PDF file is missing")
 def test_complete_pipeline():
     """Test the entire pipeline from PDF to heat sheet PDFs."""
     

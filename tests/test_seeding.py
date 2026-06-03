@@ -1,6 +1,8 @@
 """
 Test suite for heat seeding algorithm.
 """
+import os
+import pytest
 from src.seeding.seeder import (
     time_to_seconds,
     get_center_out_lanes,
@@ -121,6 +123,7 @@ def test_seeding_with_sample_entries():
     print("✓ Formatting tests passed")
 
 
+@pytest.mark.skipif(not os.path.exists("data/samples/1769543968773-7a7qa8q6s.pdf"), reason="Sample PDF file is missing")
 def test_seeding_with_real_data():
     """Test seeding with real PDF data."""
     print("\nTesting seeding with real PDF data...")

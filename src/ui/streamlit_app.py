@@ -20,7 +20,7 @@ from src.utils.cleanup import start_cleanup_daemon, clear_directory, cleanup_old
 # ============================================================================
 st.set_page_config(
     page_title="heatWave - Heat Sheet Generator",
-    page_icon="🏊",
+    page_icon="💡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -117,7 +117,7 @@ def process_pdf(pdf_file):
         return events, text
     
     except Exception as e:
-        st.error(f"❌ Error processing PDF: {str(e)}")
+        st.error(f"Error processing PDF: {str(e)}")
         return None, None
 
 
@@ -136,7 +136,7 @@ def seed_all_events(events, num_lanes):
         return heat_sheets
     
     except Exception as e:
-        st.error(f"❌ Error seeding events: {str(e)}")
+        st.error(f"Error seeding events: {str(e)}")
         return None
 
 
@@ -180,7 +180,7 @@ def generate_pdfs(heat_sheets, meet_title, meet_date, num_lanes):
             return full_pdf_content, individual_pdfs
     
     except Exception as e:
-        st.error(f"❌ Error generating PDFs: {str(e)}")
+        st.error(f"Error generating PDFs: {str(e)}")
         return None, None
 
 
@@ -191,18 +191,18 @@ def main():
     initialize_session_state()
     
     # Header
-    st.markdown('<div class="main-header">🏊 heatWave</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header">heatWave</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtitle">Psych Sheet to Heat Sheet Converter</div>', unsafe_allow_html=True)
     
     # ========================================================================
     # SIDEBAR: ADMIN & CLEANUP
     # ========================================================================
     with st.sidebar:
-        st.markdown("### ⚙️ Admin")
+        st.markdown("### Admin")
         
-        if st.button("🗑️ Clear All Generated Files", use_container_width=True, type="secondary"):
+        if st.button("Clear All Generated Files", use_container_width=True, type="secondary"):
             cleared = clear_directory("data/output")
-            st.success(f"✅ Cleared {cleared} PDF file(s) from data/output/")
+            st.success(f"Cleared {cleared} PDF file(s) from data/output/")
         
         st.caption("""
         **Auto-cleanup enabled:**
@@ -213,7 +213,7 @@ def main():
         
         st.divider()
         
-        st.markdown("### 🔒 Security")
+        st.markdown("### Security")
         st.info("""
         **Zero-Persistent-Storage Design:**
         - Temp folders auto-delete after each generation
@@ -222,7 +222,7 @@ def main():
         """)
     
     # Main content
-    tab1, tab2, tab3, tab4 = st.tabs(["📤 Upload", "👀 Preview", "⚙️ Settings", "📊 Generate"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Upload", "Preview", "Settings", "Generate"])
     
     # ========================================================================
     # TAB 1: UPLOAD
@@ -243,13 +243,13 @@ def main():
             if uploaded_file is not None:
                 st.session_state.pdf_uploaded = True
                 
-                st.markdown('<div class="success-box">✅ PDF uploaded successfully!</div>', unsafe_allow_html=True)
+                st.markdown('<div class="success-box">PDF uploaded successfully!</div>', unsafe_allow_html=True)
                 
                 st.info(f"File: **{uploaded_file.name}**")
                 st.info(f"Size: **{uploaded_file.size / 1024:.1f} KB**")
                 
                 # Process PDF
-                if st.button("🔍 Parse PDF", type="primary", use_container_width=True):
+                if st.button("Parse PDF", type="primary", use_container_width=True):
                     events, text = process_pdf(uploaded_file)
                     
                     if events:
@@ -257,7 +257,7 @@ def main():
                         st.session_state.pdf_uploaded = True
                         
                         # Show success message
-                        st.markdown('<div class="success-box">✅ PDF parsed successfully!</div>', unsafe_allow_html=True)
+                        st.markdown('<div class="success-box">PDF parsed successfully!</div>', unsafe_allow_html=True)
                         
                         # Quick stats
                         relay_count = sum(1 for e in events if e.entries and not hasattr(e.entries[0], 'swimmer'))
@@ -274,7 +274,7 @@ def main():
                         with col_d:
                             st.metric("Total Entries", total_entries)
                         
-                        st.success("✅ Ready to seed heats! Go to the **Settings** tab to customize.")
+                        st.success("Ready to seed heats! Go to the **Settings** tab to customize.")
         
         with col2:
             st.markdown("### Info")
@@ -298,7 +298,7 @@ def main():
         st.header("Event Preview")
         
         if st.session_state.events is None:
-            st.info("📤 Upload and parse a PDF first to see the preview.")
+            st.info("Upload and parse a PDF first to see the preview.")
         else:
             events = st.session_state.events
             
@@ -413,7 +413,7 @@ def main():
         st.header("Generate Heat Sheets")
         
         if st.session_state.events is None:
-            st.warning("⚠️ Please upload and parse a PDF first.")
+            st.warning("Please upload and parse a PDF first.")
         else:
             # Get settings from session state
             meet_title = st.session_state.get('meet_title', 'Swimming Meet')
@@ -434,7 +434,7 @@ def main():
             """)
             
             # Main generate button
-            if st.button("🚀 Generate Heat Sheets", type="primary", use_container_width=True, key="generate_btn"):
+            if st.button("Generate Heat Sheets", type="primary", use_container_width=True, key="generate_btn"):
                 # Seed all events
                 heat_sheets = seed_all_events(events, num_lanes)
                 
@@ -442,7 +442,7 @@ def main():
                     st.session_state.heat_sheets = heat_sheets
                     
                     # Show stats
-                    st.markdown('<div class="success-box">✅ Events seeded successfully!</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="success-box">Events seeded successfully!</div>', unsafe_allow_html=True)
                     
                     col1, col2, col3, col4 = st.columns(4)
                     with col1:
@@ -457,7 +457,7 @@ def main():
                         st.metric("Smallest Event", f"{len(smallest.assignments)} entries")
                     
                     # Display heat distribution
-                    with st.expander("📊 View Heat Details"):
+                    with st.expander("View Heat Details"):
                         for heat_sheet in heat_sheets[:5]:
                             event = heat_sheet.event
                             st.markdown(f"**Event {event.number}: {event.gender} {event.distance}Y {event.stroke}**")
@@ -478,7 +478,7 @@ def main():
             # Download section
             if st.session_state.heat_sheets:
                 st.markdown("---")
-                st.markdown("### 📥 Download Heat Sheets")
+                st.markdown("### Download Heat Sheets")
                 
                 # Generate PDFs
                 full_pdf, individual_pdfs = generate_pdfs(
@@ -493,7 +493,7 @@ def main():
                     
                     with col1:
                         st.download_button(
-                            label="📄 Download Full Meet PDF",
+                            label="Download Full Meet PDF",
                             data=full_pdf,
                             file_name=f"HeatSheet_{meet_title.replace(' ', '_')}.pdf",
                             mime="application/pdf",
@@ -534,13 +534,7 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.caption("📧 Questions? Report bugs to the development team.")
-    with col2:
-        st.caption("🏊 Made for USA Swimming coaches")
-    with col3:
-        st.caption(f"Last updated: {datetime.now().strftime('%m/%d/%Y')}")
+    st.caption(f"Last updated: {datetime.now().strftime('%m/%d/%Y')}")
 
 
 if __name__ == "__main__":

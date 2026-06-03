@@ -1,6 +1,8 @@
 """
 Test suite for event and entry parsing logic.
 """
+import os
+import pytest
 from src.parser.extractor import (
     extract_text_from_pdf,
     parse_event_header,
@@ -97,6 +99,7 @@ def test_relay_entry_parsing():
     print("✓ Relay entry parsing tests passed")
 
 
+@pytest.mark.skipif(not os.path.exists("data/samples/1769543968773-7a7qa8q6s.pdf"), reason="Sample PDF file is missing")
 def test_full_extraction_and_parsing():
     """Test full PDF extraction and event parsing."""
     print("\nTesting full PDF extraction and parsing...")

@@ -1,233 +1,64 @@
-# HeatWave Streamlit UI - User Guide
+# Streamlit Developer Reference Guide
 
-## Quick Start
-
-### For Coaches (Easy Way)
-
-1. **Start the app:**
-   ```bash
-   python run_streamlit.py
-   ```
-   The app opens in your browser at `http://localhost:8501`
-
-2. **Upload your psych sheet:**
-   - Click the **Upload** tab
-   - Drag and drop your USA Swimming psych sheet PDF
-   - Click **Parse PDF** button
-
-3. **Review the data:**
-   - Go to **Preview** tab
-   - Check that events and entries are correct
-   - Filter by event type if needed
-
-4. **Customize settings:**
-   - Go to **Settings** tab
-   - Enter meet title (e.g., "Oklahoma 10-Under Championships")
-   - Set meet date (format: MM/DD/YYYY)
-   - Adjust pool lanes (usually 8)
-
-5. **Generate heat sheets:**
-   - Go to **Generate** tab
-   - Click **Generate Heat Sheets** button
-   - Wait for processing (takes a few seconds)
-   - Download the PDF files
-
-6. **Use at the meet:**
-   - Print the full meet PDF (one copy for each official)
-   - Or print individual event sheets as needed
-   - Coaches use these to time the swimmers
+This guide details how to use the Streamlit interface within the `heatWave-ios` repository. The Streamlit application serves as the reference developer UI, allowing local validation and debugging of the core parsing and seeding business logic before porting or verification in the iOS application.
 
 ---
 
-## Features Overview
+## Purpose
 
-### 📤 Upload Tab
-- Drag-and-drop PDF upload
-- File size display
-- Quick statistics after parsing
-  - Total events
-  - Relay vs individual events
-  - Total entries
-
-### 👀 Preview Tab
-- View all parsed events
-- Filter by event type (All/Individual/Relay)
-- Search by event name
-- See sample entries for each event
-- Verify data accuracy before generating
-
-### ⚙️ Settings Tab
-- **Meet Title:** Name of the meet (displayed on heat sheets)
-- **Meet Date:** Date to print on heat sheets
-- **Number of Lanes:** Pool configuration (4-10 lanes, typically 8)
-- Real-time preview of settings
-
-### 📊 Generate Tab
-- Review configuration before generating
-- Progress indicators during seeding
-- Heat statistics:
-  - Total heats created
-  - Average entries per heat
-  - Largest/smallest event
-  - Heat distribution details
-- Download options:
-  - Full meet PDF (all events in one document)
-  - Individual event PDFs (one sheet per event)
+The Streamlit interface acts as a local sandbox to:
+1. Validate that the text extraction logic handles specific psych sheet PDF files correctly.
+2. Confirm the regex parser correctly identifies events, individual entries, relays, age metrics, and seed times.
+3. Verify that the seeding engine applies the center-out lane assignment and heat distribution in compliance with USA Swimming rules.
+4. Preview the layout of the generated PDF heat sheets.
 
 ---
 
-## Understanding Heat Seeding
+## Local Setup
 
-The app uses **official USA Swimming seeding rules**:
+### Prerequisites
+- Python 3.10 or higher
+- Package dependencies installed via `requirements.txt`
 
-### How Heats Are Assigned
-1. **Swimmers sorted by time** - Slowest to fastest
-2. **Heats filled sequentially** - All fastest swimmers go to Heat 1, next fastest to Heat 2, etc.
-3. **Lane placement (center-out)** - Within each heat:
-   - Lane 4: Fastest (center-left)
-   - Lane 5: Second fastest (center-right)
-   - Lane 3: Third fastest
-   - Lane 6: Fourth fastest
-   - And so on outward
+### Starting the Application
+To run the Streamlit UI, execute the following command in the project root:
 
-### Lane Pattern for 8-Lane Pool
-```
-Placement Order (by speed):
-Lane 4 → Lane 5 → Lane 3 → Lane 6 → Lane 2 → Lane 7 → Lane 1 → Lane 8
-```
-
-This ensures:
-- Fastest swimmers race in center lanes (most consistent)
-- Heats are evenly distributed
-- Fair competition according to USA Swimming standards
-
----
-
-## PDF Output
-
-### Full Meet PDF
-- **What:** All events in one PDF document
-- **Pages:** Usually 1 cover + 1-2 pages per event
-- **Use:** Hand to meet officials
-- **File name:** `HeatSheet_[Meet_Name].pdf`
-
-### Individual Event PDFs
-- **What:** One PDF per event
-- **Use:** Give to event organizers/timers
-- **File names:** `Event_01_Heatsheet.pdf`, `Event_02_Heatsheet.pdf`, etc.
-
-### PDF Content
-Each heat sheet shows:
-- Meet name and date
-- Event number, gender, distance, and stroke
-- Heat-by-heat assignments:
-  - Lane number (1-8)
-  - Swimmer name
-  - Age (for individuals)
-  - Team code
-  - Seed time
-  - Original placement number
-
----
-
-## Tips & Troubleshooting
-
-### ✅ Best Practices
-1. **Always preview first** - Check that events parsed correctly
-2. **Verify meet info** - Make sure date and title are correct
-3. **Confirm pool lanes** - Use 8 unless your pool is different
-4. **Print a test page** - Check formatting before final print
-
-### ❌ Common Issues
-
-**"Error processing PDF"**
-- Make sure you have a valid USA Swimming psych sheet
-- File should be in standard PDF format
-- Try again with a different psych sheet
-
-**"No events found"**
-- PDF might be in an unexpected format
-- Make sure it's a USA Swimming psych sheet (not a different format)
-
-**"Missing swimmers in preview"**
-- This is fine! The app extracts what's in the PDF
-- If a swimmer is missing from the psych sheet, it won't appear in seeding
-
-**"Event names look wrong"**
-- The app tries to parse event names from the PDF
-- Check the Preview tab to see exactly what was extracted
-- You can still generate heats - the seeding works by entry count
-
-### 🔄 Redo Everything
-1. Refresh the page (Ctrl+R or Cmd+R)
-2. Start over with a new PDF
-3. All session data is cleared
-
----
-
-## Technical Details (For Administrators)
-
-### System Requirements
-- Python 3.11 or higher
-- ~200 MB disk space
-- Modern web browser
-
-### Installation (First Time)
 ```bash
-cd heatWave
-pip install -r requirements.txt
+streamlit run src/ui/streamlit_app.py
 ```
 
-### Running the App
-```bash
-python run_streamlit.py
-```
-
-### Performance
-- Typical psych sheet (700 entries): < 5 seconds
-- PDF generation: < 3 seconds
-- Works offline (no internet needed)
-
-### File Size
-- Input PDF: ~80 KB
-- Output PDFs: ~80-90 KB total
-- No files stored on disk (cleaned up automatically)
+The application will launch in your default web browser (typically at `http://localhost:8501`).
 
 ---
 
-## FAQ
+## Application Layout and Workflow
 
-**Q: Can I edit the seeding after generation?**
-A: Not yet. You can generate new heat sheets by re-uploading the PDF with different settings.
+The developer UI is split into four primary tabs:
 
-**Q: What if a swimmer needs to be scratched?**
-A: Re-generate with an updated psych sheet that excludes the scratched swimmer.
+### 1. Upload Tab
+- **Functionality:** Upload a USA Swimming psych sheet PDF.
+- **Action:** Click "Parse PDF" to run the extraction engine (`extractor.py`).
+- **Feedback:** Displays parser statistics (total parsed events, individual entries, relays, and parsed swimmer count).
 
-**Q: Can I use this for other meet types?**
-A: Currently designed for USA Swimming. International formats may not parse correctly.
+### 2. Preview Tab
+- **Functionality:** Inspect the parsed data structure before seeding.
+- **Action:** Use filters (All, Individual, Relay) or search queries to review event headers and sample entries.
+- **Purpose:** Detect parsing discrepancies or unrecognized formats in the source PDF.
 
-**Q: Is my data secure?**
-A: Yes. The app runs entirely on your computer. No data is uploaded or stored anywhere.
+### 3. Settings Tab
+- **Functionality:** Configure meet parameters.
+- **Parameters:** Adjust the Meet Title, Meet Date, and pool lane configuration (4 to 10 lanes, standard is 8).
 
-**Q: What if I find a bug?**
-A: Report it to the heatWave development team with:
-- The problematic PDF (if possible)
-- What went wrong
-- Your Python and Streamlit versions
-
----
-
-## Support
-
-For questions or problems:
-1. Check the **Preview tab** to verify data extraction
-2. Re-read the **Tips & Troubleshooting** section above
-3. Contact the heatWave support team
-
-**Contact:** heatwave@example.com
+### 4. Generate Tab
+- **Functionality:** Compute heat assignments and generate print-ready documents.
+- **Action:** Click "Generate Heat Sheets". The app seeds all parsed entries and displays heat distribution metrics.
+- **Output:** Download links for the full meet PDF or individual event PDFs.
 
 ---
 
-**Version:** 1.0  
-**Last Updated:** April 2026  
-**Made for USA Swimming Coaches**
+## Data Management and Safety
+
+- **Temporary Storage:** The Streamlit application generates output PDFs in a local temporary directory (`data/output/`).
+- **Cleanup Daemon:** A background thread automatically deletes files in the output directory that are older than one hour. The check runs every five minutes.
+- **Manual Cleanup:** An administration panel in the sidebar allows developers to clear all generated files immediately.
+- **Privacy:** All computation and PDF parsing occur locally. No data is transmitted to remote servers.

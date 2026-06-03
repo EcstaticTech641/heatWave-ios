@@ -1,5 +1,8 @@
+import os
+import pytest
 import pdfplumber
 
+@pytest.mark.skipif(not os.path.exists("data/samples/1769543968773-7a7qa8q6s.pdf"), reason="Sample PDF file is missing")
 def test_extract():
     pdf_path = "data/samples/1769543968773-7a7qa8q6s.pdf"
     
