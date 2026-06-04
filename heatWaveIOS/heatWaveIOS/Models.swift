@@ -95,7 +95,7 @@ struct LaneAssignment: Codable, Equatable {
     let lane: Int
 }
 
-/// A complete heat sheet for an event.
+/// A complete heat sheet for an event, including a timeline estimate.
 struct HeatSheet: Codable, Equatable, Identifiable {
     /// Unique identifier for SwiftUI Lists.
     var id: Int { event.number }
@@ -107,4 +107,8 @@ struct HeatSheet: Codable, Equatable, Identifiable {
     let heats: Int
     /// The lane assignments.
     let assignments: [LaneAssignment]
+    /// Estimated swim time for this event (seconds).
+    /// Computed as: sum of each heat's slowest timed seed time + (heats × turnoverTime).
+    /// Heats whose slowest entry is NT use a default fallback time (see SeedingEngine).
+    let estimatedDuration: TimeInterval
 }
