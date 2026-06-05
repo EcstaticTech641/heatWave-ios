@@ -29,8 +29,8 @@ struct SeedingEngine {
     // MARK: - Configuration
     
     /// Seconds added per heat to model check-in, clear-deck, and start procedure.
-    /// Default: 240 s (4 minutes), a common short-course meet interval.
-    var turnoverTime: TimeInterval = 240
+    /// Default: 120 s (2 minutes). ContentView exposes this as `turnoverMinutes` (stepper, 1–15 min).
+    var turnoverTime: TimeInterval = 120
     
     /// Fallback swim time (seconds) used when every entry in a heat is NT.
     /// Default: 120 s (2:00.00) — a conservative middle-distance estimate.

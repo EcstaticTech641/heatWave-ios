@@ -13,14 +13,20 @@ heatWave-ios/
 ├── heatWaveIOS/                 # Native iOS SwiftUI application source
 │   ├── heatWaveIOS/             # Swift source files
 │   │   ├── App.swift            # Main entry point
-│   │   ├── ContentView.swift    # Primary user interface
+│   │   ├── ContentView.swift    # Primary UI, ProcessingState, keyboard shortcuts
 │   │   ├── DocumentPicker.swift # Native Document Picker wrapper
-│   │   ├── Models.swift         # Data structures mapping entries and events
+│   │   ├── Models.swift         # Data structures: Event, HeatSheet, Swimmer, etc.
 │   │   ├── PDFExtractor.swift   # Bounding-box text extraction (iOS 16+)
 │   │   ├── RegexParser.swift    # Text-to-data parsing engine
-│   │   ├── SeedingEngine.swift  # USA Swimming seeding rules
-│   │   └── PDFGenerator.swift   # Native PDF renderer
+│   │   ├── SeedingEngine.swift  # USA Swimming seeding rules + timeline estimation
+│   │   ├── PDFGenerator.swift   # Native PDF renderer with timeline blocks
+│   │   └── SwimmerSearchView.swift # Find Swimmer sheet + per-swimmer schedule
 │   └── heatWaveIOSTests/        # XCTest suite for Swift implementation
+│       ├── PDFExtractorTests.swift
+│       ├── PDFGeneratorTests.swift
+│       ├── RegexParserTests.swift
+│       ├── SeedingEngineTests.swift
+│       └── SwimmerSearchViewTests.swift
 ├── src/                         # Python Reference Implementation
 │   ├── core/
 │   │   └── pdf_generator.py     # PDF generation reference logic
@@ -47,34 +53,58 @@ The Python code in `src/` serves as the official reference implementation. The n
 
 | Python Reference Module | Swift iOS Implementation | Purpose |
 |-------------------------|--------------------------|---------|
-| `src/parser/extractor.py` | `PDFExtractor.swift` + `RegexParser.swift` | Coordinates column-aware text extraction and parses entries via regex. |
-| `src/models/schemas.py` | `Models.swift` (inside `RegexParser.swift`) | Defines data schemas for Meet, Event, Entry, and HeatSheet. |
-| `src/seeding/seeder.py` | `SeedingEngine.swift` | Applies USA Swimming rules to seed entries into heats and lanes. |
-| `src/core/pdf_generator.py` | `PDFGenerator.swift` | Renders the final print-ready heat sheet PDF. |
+| `src/parser/extractor.py` | `PDFExtractor.swift` + `RegexParser.swift` | Column-aware text extraction and entry parsing. |
+| `src/models/schemas.py` | `Models.swift` | Data schemas for Event, Entry, HeatSheet, Swimmer. |
+| `src/seeding/seeder.py` | `SeedingEngine.swift` | USA Swimming seeding rules + timeline estimation. |
+| `src/core/pdf_generator.py` | `PDFGenerator.swift` | Print-ready heat sheet PDF with timeline blocks. |
+
+---
+
+## Features (Current)
+
+### Core Pipeline
+Import a psych sheet PDF → configure lanes and heat gap → generate a fully seeded heat sheet PDF.
+
+### Timeline Estimator
+For each event, the seeding engine sums the slowest timed seed in every heat and adds a configurable per-heat turnover gap (default **2 min**) to account for check-in, clearing the deck, and the start signal.
+
+- **PDF:** Each event header prints `Est. Start` (running clock) and `Est. Event Duration`.
+- **App:** The success screen shows a grand-total **Estimated Meet Duration** card.
+- **Config:** The heat gap is adjustable on the Configure Meet screen (1–15 min stepper).
+
+### Find Swimmer
+After generating a heat sheet, tap **Find Swimmer** (or press **Cmd+F**) to look up any swimmer by first or last name. A detail screen shows every event they are entered in — heat, lane, seed time, and estimated start time. Relay entries are excluded.
+
+### iPad + Magic Keyboard Shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Cmd+O` | Import psych sheet |
+| `Cmd+Return` | Generate heat sheet |
+| `Cmd+S` | Share PDF |
+| `Cmd+F` | Open Find Swimmer |
+| `Cmd+R` | Start Over |
+| `Escape` | Dismiss Find Swimmer sheet |
+| `Return` | Jump to first search result |
 
 ---
 
 ## Developer Setup: Python Reference Logic
 
-Developers can use the Python environment to inspect the reference parsing and seeding logic, debug rules, and run the reference suite.
-
 ### Installation
 Ensure Python 3.10+ is installed.
 
 ```bash
-# Install dependencies
 pip install -r requirements.txt
 ```
 
 ### Running Reference Tests
-Run the Python test suite to verify the reference parser and seeding calculations:
 
 ```bash
 pytest tests/
 ```
 
 ### Running the Reference UI
-To run the Streamlit frontend locally for quick visualization of the parsing/seeding logic:
 
 ```bash
 streamlit run src/ui/streamlit_app.py
@@ -84,22 +114,20 @@ streamlit run src/ui/streamlit_app.py
 
 ## Seeding Rules
 
-The application enforces standard USA Swimming preliminary seeding rules:
+Standard USA Swimming preliminary seeding rules are enforced:
 
-1. **Heat Assignment:** Entries are sorted by seed time (slowest to fastest) and distributed across heats to achieve a balanced lane assignment.
-2. **Lane Distribution (Center-Out):** Within each heat, lanes are assigned outward starting from the center lanes based on speed. For an 8-lane pool, the assignment order is:
+1. **Heat Assignment:** Entries are sorted by seed time (slowest to fastest) and distributed across heats. NT entries land in the earliest heat.
+2. **Lane Distribution (Center-Out):** Within each heat, the fastest swimmer gets the center lane, with subsequent swimmers filling outward alternately. For an 8-lane pool:
    ```
-   Lane 4 (Fastest) -> Lane 5 -> Lane 3 -> Lane 6 -> Lane 2 -> Lane 7 -> Lane 1 -> Lane 8
+   Lane 4 (Fastest) → Lane 5 → Lane 3 → Lane 6 → Lane 2 → Lane 7 → Lane 1 → Lane 8
    ```
 
 ---
 
 ## iOS Deployment and Testing
 
-To compile and execute the native iOS application:
-
 1. Transfer the contents of the `heatWaveIOS` folder to an Apple macOS machine.
 2. Open Xcode and create a new **iOS App** project (Interface: SwiftUI, Language: Swift, minimum deployment target: iOS 16.0).
 3. Import the files from `heatWaveIOS/heatWaveIOS` into the main target and files from `heatWaveIOS/heatWaveIOSTests` into the test target.
-4. Execute `Cmd + R` to run on a physical iOS device or simulator.
-5. Execute `Cmd + U` to run the native XCTest suite.
+4. Run `Cmd+U` to execute the XCTest suite.
+5. Run `Cmd+R` to launch on a simulator or physical device.
