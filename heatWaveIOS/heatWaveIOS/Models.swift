@@ -77,13 +77,6 @@ struct Event: Codable, Equatable, Identifiable {
     let gender: Gender
 }
 
-/// Represents a single heat within an event.
-struct Heat: Codable, Equatable {
-    /// The heat number.
-    let number: Int
-    /// The lane assignments for this heat.
-    let assignments: [LaneAssignment]
-}
 
 /// Represents a swimmer or relay team assigned to a specific lane.
 struct LaneAssignment: Codable, Equatable {

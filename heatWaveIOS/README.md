@@ -1,49 +1,12 @@
-# heatWaveIOS Project
+# heatWaveIOS (v0.1.0-alpha.1)
 
-iOS companion application to the heatWave psych sheet processor.
+Standalone native iOS application for the heatWave psych sheet processor.
 
-- Native, offline-capable SwiftUI application.
+- Native, 100% offline-capable SwiftUI application.
 - Converts USA Swimming psych sheet PDFs to formatted heat sheet PDFs entirely on-device.
-- Minimum deployment target: iOS 16.
+- Version: `v0.1.0-alpha.1` (`CFBundleShortVersionString`: `0.1.0`, `CFBundleVersion`: `1`).
+- Minimum deployment target: iOS 16.0.
 
----
-
-## Project Structure
-
-```
-heatWaveIOS/
-├── EXTRACTION_SPIKE.md          # PDF column extraction strategy (read first)
-├── heatWaveIOS/                 # Swift source files
-│   ├── App.swift                # Main entry point
-│   ├── ContentView.swift        # Root view, ProcessingState, keyboard shortcuts
-│   ├── DocumentPicker.swift     # UIDocumentPickerViewController wrapper
-│   ├── Models.swift             # Core data models (Event, HeatSheet, Swimmer, etc.)
-│   ├── PDFExtractor.swift       # Phase 2: PDF text extraction (rect-based)
-│   ├── RegexParser.swift        # Phase 3: text to data models
-│   ├── SeedingEngine.swift      # Phase 4: seeding rules, heat assignment, and timeline estimation
-│   ├── PDFGenerator.swift       # Phase 4: UIGraphicsPDFRenderer output with timeline blocks
-│   └── SwimmerSearchView.swift  # Find Swimmer sheet: name search + per-swimmer schedule
-└── heatWaveIOSTests/
-    ├── PDFExtractorTests.swift
-    ├── PDFGeneratorTests.swift
-    ├── RegexParserTests.swift
-    ├── SeedingEngineTests.swift
-    └── SwimmerSearchViewTests.swift
-```
-
----
-
-## Reference Implementation
-
-The Python source in the project root's `src/` directory is the reference implementation and source of truth for all business logic.
-
-| Python File | Swift Counterpart |
-|---|---|
-| `src/parser/extractor.py` | `PDFExtractor.swift` + `RegexParser.swift` |
-| `src/models/schemas.py` | `Models.swift` |
-| `src/seeding/seeder.py` | `SeedingEngine.swift` |
-
----
 
 ## Features
 
