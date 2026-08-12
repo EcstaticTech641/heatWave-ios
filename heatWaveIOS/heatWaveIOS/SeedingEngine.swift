@@ -44,12 +44,19 @@ struct SeedingEngine {
             throw SeedingError.invalidLaneCount(lanes)
         }
         
-        if event.entries.isEmpty {
+        // Filter out non-seeded entries (.noShow, .scratched, .disqualified).
+        // Only .seeded and .noTime entries are assigned to heats and lanes.
+        let seedableEntries = event.entries.filter {
+            let st = statusForEntry($0)
+            return st == .seeded || st == .noTime
+        }
+        
+        if seedableEntries.isEmpty {
             return HeatSheet(event: event, lanes: lanes, heats: 0, assignments: [], estimatedDuration: 0)
         }
         
         // Slowest to fastest
-        let sortedEntries = sortByTime(event.entries)
+        let sortedEntries = sortByTime(seedableEntries)
         
         let numHeats = Int(ceil(Double(sortedEntries.count) / Double(lanes)))
         let lanePattern = centerOutPattern(lanes: lanes)
@@ -100,7 +107,8 @@ struct SeedingEngine {
             let slowest = times.max() ?? ntFallbackTime
             swimTotal += slowest
         }
-        let estimatedDuration = swimTotal + Double(numHeats) * turnoverTime
+        let totalTurnover = max(0, Double(numHeats - 1)) * turnoverTime
+        let estimatedDuration = swimTotal + totalTurnover
         
         return HeatSheet(
             event: event,
@@ -128,6 +136,13 @@ struct SeedingEngine {
         switch entry {
         case .individual(let ind): return ind.seedTime
         case .relay(let rel): return rel.seedTime
+        }
+    }
+    
+    func statusForEntry(_ entry: EventEntry) -> EntryStatus {
+        switch entry {
+        case .individual(let ind): return ind.status
+        case .relay(let rel): return rel.status
         }
     }
     

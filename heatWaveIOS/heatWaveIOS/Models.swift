@@ -26,32 +26,59 @@ struct Swimmer: Codable, Equatable {
     let teamCode: String
 }
 
+/// Represents the parsing/seeding status of an entry.
+public enum EntryStatus: String, Codable, Equatable {
+    case seeded
+    case noTime
+    case noShow
+    case scratched
+    case disqualified
+}
+
 /// Represents an individual swimmer's entry in an event.
-struct IndividualEntry: Codable, Equatable, Identifiable {
+public struct IndividualEntry: Codable, Equatable, Identifiable {
     /// Unique identifier for SwiftUI Lists.
-    var id: String { "\(place)-\(swimmer.name)" }
+    public var id: String { "\(place)-\(swimmer.name)" }
     /// The placement/ranking based on seed time.
-    let place: Int
+    public let place: Int
     /// The swimmer participating in the event.
-    let swimmer: Swimmer
+    public let swimmer: Swimmer
     /// The seed time in seconds. NT is TimeInterval.infinity.
-    let seedTime: TimeInterval
+    public let seedTime: TimeInterval
+    /// The status of the entry.
+    public let status: EntryStatus
+    
+    public init(place: Int, swimmer: Swimmer, seedTime: TimeInterval, status: EntryStatus = .seeded) {
+        self.place = place
+        self.swimmer = swimmer
+        self.seedTime = seedTime
+        self.status = status
+    }
 }
 
 /// Represents a relay team's entry in an event.
-struct RelayEntry: Codable, Equatable, Identifiable {
+public struct RelayEntry: Codable, Equatable, Identifiable {
     /// Unique identifier for SwiftUI Lists.
-    var id: String { "\(place)-\(teamName)" }
+    public var id: String { "\(place)-\(teamName)" }
     /// The placement/ranking based on seed time.
-    let place: Int
+    public let place: Int
     /// The team name and designation (e.g. "Tulsa Swim-OK A").
-    let teamName: String
+    public let teamName: String
     /// The seed time in seconds. NT is TimeInterval.infinity.
-    let seedTime: TimeInterval
+    public let seedTime: TimeInterval
+    /// The status of the entry.
+    public let status: EntryStatus
+    
+    public init(place: Int, teamName: String, seedTime: TimeInterval, status: EntryStatus = .seeded) {
+        self.place = place
+        self.teamName = teamName
+        self.seedTime = seedTime
+        self.status = status
+    }
 }
 
 /// Represents an entry in an event, which can be either an individual or a relay team.
-enum EventEntry: Codable, Equatable {
+public enum EventEntry: Codable, Equatable {
     case individual(IndividualEntry)
     case relay(RelayEntry)
 }

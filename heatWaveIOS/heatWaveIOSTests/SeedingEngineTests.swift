@@ -150,13 +150,40 @@ final class SeedingEngineTests: XCTestCase {
         if case .individual(let ind) = heat1[2].entry { XCTAssertEqual(ind.swimmer.name, "Mid") }
     }
 
+    // MARK: - Exclusion of Non-Seeded Entries
+
+    func testExcludesNonSeededEntriesFromLanes() throws {
+        // 33 total entries: 31 seeded, 1 SCR, 1 NS
+        var entries: [EventEntry] = []
+        for i in 1...31 {
+            entries.append(.individual(IndividualEntry(place: i, swimmer: Swimmer(name: "S\(i)", age: nil, teamCode: "T"), seedTime: Double(i), status: .seeded)))
+        }
+        entries.append(.individual(IndividualEntry(place: 32, swimmer: Swimmer(name: "Scratch Guy", age: nil, teamCode: "T"), seedTime: .infinity, status: .scratched)))
+        entries.append(.individual(IndividualEntry(place: 33, swimmer: Swimmer(name: "NoShow Guy", age: nil, teamCode: "T"), seedTime: .infinity, status: .noShow)))
+
+        let event = Event(number: 1, name: "Test", distance: 50, stroke: "Free", entries: entries, isRelay: false, gender: .female)
+        let sheet = try engine.seedEvent(event, lanes: 8)
+
+        // 31 active entries in 8 lanes -> ceil(31/8) = 4 heats (Heat 1 gets 7, Heats 2-4 get 8)
+        XCTAssertEqual(sheet.heats, 4)
+        XCTAssertEqual(sheet.assignments.count, 31)
+
+        // Verify SCR and NS entries are NOT in lane assignments
+        for assignment in sheet.assignments {
+            if case .individual(let ind) = assignment.entry {
+                XCTAssertNotEqual(ind.status, .scratched)
+                XCTAssertNotEqual(ind.status, .noShow)
+            }
+        }
+    }
+
     // MARK: - Timeline Estimator
 
-    /// All entries are timed. estimatedDuration = slowest seed + (heats × turnover).
+    /// All entries are timed. estimatedDuration = slowest seed + ((heats - 1) × turnover).
     func testEstimatedDurationAllTimed() throws {
         // 3 entries, 8-lane pool → 1 heat
-        // Slowest = 30.0 s. Turnover default = 120 s.
-        // Expected: 30.0 + 1 * 120 = 150.0 s
+        // Slowest = 30.0 s. Turnover default = 120 s. (1 heat -> 0 turnover gaps)
+        // Expected: 30.0 + 0 * 120 = 30.0 s
         let entries: [EventEntry] = [
             .individual(IndividualEntry(place: 1, swimmer: Swimmer(name: "A", age: nil, teamCode: "T"), seedTime: 25.0)),
             .individual(IndividualEntry(place: 2, swimmer: Swimmer(name: "B", age: nil, teamCode: "T"), seedTime: 28.0)),
@@ -164,29 +191,28 @@ final class SeedingEngineTests: XCTestCase {
         ]
         let event = Event(number: 1, name: "Test", distance: 50, stroke: "Free", entries: entries, isRelay: false, gender: .female)
         let sheet = try engine.seedEvent(event, lanes: 8)
-        XCTAssertEqual(sheet.estimatedDuration, 150.0, accuracy: 0.01)
+        XCTAssertEqual(sheet.estimatedDuration, 30.0, accuracy: 0.01)
     }
 
     /// All entries NT → fallback used per heat.
     func testEstimatedDurationNTFallback() throws {
-        // 2 NT entries → 1 heat, all NT → fallback = 120 s, turnover = 120 s
-        // Expected: 120 + 1 * 120 = 240.0 s
+        // 2 NT entries → 1 heat, all NT → fallback = 120 s, 1 heat -> 0 turnover gaps
+        // Expected: 120 + 0 * 120 = 120.0 s
         let entries: [EventEntry] = [
             .individual(IndividualEntry(place: 1, swimmer: Swimmer(name: "A", age: nil, teamCode: "T"), seedTime: .infinity)),
             .individual(IndividualEntry(place: 2, swimmer: Swimmer(name: "B", age: nil, teamCode: "T"), seedTime: .infinity)),
         ]
         let event = Event(number: 1, name: "Test", distance: 50, stroke: "Free", entries: entries, isRelay: false, gender: .female)
         let sheet = try engine.seedEvent(event, lanes: 8)
-        // ntFallbackTime = 120, turnoverTime = 120 → 120 + 120 = 240
-        XCTAssertEqual(sheet.estimatedDuration, 240.0, accuracy: 0.01)
+        XCTAssertEqual(sheet.estimatedDuration, 120.0, accuracy: 0.01)
     }
 
     /// Multi-heat event: each heat contributes its slowest timed seed.
     func testEstimatedDurationMultiHeat() throws {
-        // 9 entries: 1 NT (heat 1) + 8 timed (heat 2, slowest = 9.0 s)
+        // 9 entries: 1 NT (heat 1) + 8 timed (heat 2, slowest = 8.0 s)
         // Heat 1: all NT → fallback 120 s
-        // Heat 2: slowest = 9.0 s
-        // turnoverTime = 120, heats = 2 → duration = 120 + 9 + 2*120 = 369 s
+        // Heat 2: slowest = 8.0 s
+        // turnoverTime = 120, heats = 2 → duration = 120 + 8.0 + (2-1)*120 = 248.0 s
         var entries: [EventEntry] = [
             .individual(IndividualEntry(place: 1, swimmer: Swimmer(name: "NT", age: nil, teamCode: "T"), seedTime: .infinity))
         ]
@@ -195,21 +221,22 @@ final class SeedingEngineTests: XCTestCase {
         }
         let event = Event(number: 2, name: "Test", distance: 100, stroke: "Free", entries: entries, isRelay: false, gender: .male)
         let sheet = try engine.seedEvent(event, lanes: 8)
-        // Heat 1 has only the NT → fallback 120 s; Heat 2 slowest timed = 8.0 s
         XCTAssertEqual(sheet.heats, 2)
-        // Duration = 120 (NT heat fallback) + 8.0 (heat2 slowest) + 2 * 120 (turnover)
-        XCTAssertEqual(sheet.estimatedDuration, 368.0, accuracy: 0.01)
+        XCTAssertEqual(sheet.estimatedDuration, 248.0, accuracy: 0.01)
     }
 
     /// turnoverTime can be overridden before seeding.
     func testCustomTurnoverTimeIsRespected() throws {
         engine.turnoverTime = 180   // 3 minutes
-        let entries: [EventEntry] = [
-            .individual(IndividualEntry(place: 1, swimmer: Swimmer(name: "A", age: nil, teamCode: "T"), seedTime: 60.0)),
-        ]
+        var entries: [EventEntry] = []
+        // 9 entries -> 2 heats
+        for i in 1...9 {
+            entries.append(.individual(IndividualEntry(place: i, swimmer: Swimmer(name: "S\(i)", age: nil, teamCode: "T"), seedTime: Double(i * 10))))
+        }
         let event = Event(number: 1, name: "Test", distance: 100, stroke: "Back", entries: entries, isRelay: false, gender: .female)
         let sheet = try engine.seedEvent(event, lanes: 8)
-        // 1 heat, slowest = 60.0, turnover = 180 → 240 s
-        XCTAssertEqual(sheet.estimatedDuration, 240.0, accuracy: 0.01)
+        // 2 heats: heat 1 slowest = 90s, heat 2 slowest = 80s -> swimTotal = 170s. 1 turnover gap = 180s. Total = 350s.
+        XCTAssertEqual(sheet.heats, 2)
+        XCTAssertEqual(sheet.estimatedDuration, 350.0, accuracy: 0.01)
     }
 }

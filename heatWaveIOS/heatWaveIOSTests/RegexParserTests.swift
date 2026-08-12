@@ -113,6 +113,31 @@ final class RegexParserTests: XCTestCase {
         let result = parser.parseIndividualEntry(line: "4 Doe, Jane 14 Team-OK X28.50")
         XCTAssertNotNil(result)
         XCTAssertEqual(result?.seedTime, 28.50)
+        XCTAssertEqual(result?.status, .seeded)
+    }
+
+    func testEntryWithNSStatus() throws {
+        // "5 Davis, Sam 11 Team-OK NS"
+        let result = parser.parseIndividualEntry(line: "5 Davis, Sam 11 Team-OK NS")
+        XCTAssertNotNil(result)
+        XCTAssertEqual(result?.seedTime, TimeInterval.infinity)
+        XCTAssertEqual(result?.status, .noShow)
+    }
+
+    func testEntryWithSCRStatus() throws {
+        // "6 Wilson, Alex 13 Team-OK SCR"
+        let result = parser.parseIndividualEntry(line: "6 Wilson, Alex 13 Team-OK SCR")
+        XCTAssertNotNil(result)
+        XCTAssertEqual(result?.seedTime, TimeInterval.infinity)
+        XCTAssertEqual(result?.status, .scratched)
+    }
+
+    func testEntryWithDQStatus() throws {
+        // "7 Taylor, Jordan 14 Team-OK DQ"
+        let result = parser.parseIndividualEntry(line: "7 Taylor, Jordan 14 Team-OK DQ")
+        XCTAssertNotNil(result)
+        XCTAssertEqual(result?.seedTime, TimeInterval.infinity)
+        XCTAssertEqual(result?.status, .disqualified)
     }
 
     // MARK: - Relay Entry Parsing

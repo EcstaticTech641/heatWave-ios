@@ -2,6 +2,7 @@
 // heatWaveIOS
 //
 // Minimum Deployment Target: iOS 16.0
+// P0 Hotfix: Preserves all entries including NT, NS, SCR, and DQ status tokens without data loss.
 //
 // Hardware keyboard shortcuts (iPad + Magic Keyboard):
 //   Cmd+O        — Import Psych Sheet (O for Open)
@@ -219,6 +220,34 @@ struct ContentView: View {
             Text("\(heatCount) Heats | \(entryCount) Total Entries")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+            
+            let nonStandardCounts = heatSheets.reduce(into: (scr: 0, ns: 0, dq: 0)) { counts, sheet in
+                for entry in sheet.event.entries {
+                    let status: EntryStatus
+                    switch entry {
+                    case .individual(let ind): status = ind.status
+                    case .relay(let rel): status = rel.status
+                    }
+                    switch status {
+                    case .scratched: counts.scr += 1
+                    case .noShow: counts.ns += 1
+                    case .disqualified: counts.dq += 1
+                    default: break
+                    }
+                }
+            }
+            let totalNonStandard = nonStandardCounts.scr + nonStandardCounts.ns + nonStandardCounts.dq
+            
+            if totalNonStandard > 0 {
+                var parts: [String] = []
+                if nonStandardCounts.scr > 0 { parts.append("\(nonStandardCounts.scr) SCR") }
+                if nonStandardCounts.ns > 0 { parts.append("\(nonStandardCounts.ns) NS") }
+                if nonStandardCounts.dq > 0 { parts.append("\(nonStandardCounts.dq) DQ") }
+                
+                Text("\(totalNonStandard) entr\(totalNonStandard == 1 ? "y" : "ies") not seeded: \(parts.joined(separator: ", "))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             
             VStack(spacing: 6) {
                 Label("Estimated Meet Duration", systemImage: "clock")

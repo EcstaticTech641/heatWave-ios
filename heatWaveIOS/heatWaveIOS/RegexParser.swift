@@ -345,26 +345,25 @@ struct RegexParser {
 
 
     /// Parses a single individual swimmer entry line.
-
     func parseIndividualEntry(line: String) -> IndividualEntry? {
         // Use whitespacesAndNewlines to strip invisible \r characters from PDFKit
         let parts = line.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
         guard parts.count >= 3 else { return nil } // place, name, time at least
         guard let place = Int(parts[0]) else { return nil }
 
-        // Find seed time scanning from end. No strict $ anchor: survives "1:03.39Y" or trailing whitespace.
+        // Find seed time scanning from end. Survives course suffixes, NT, NS, SCR, DQ or trailing whitespace.
         var timeIdx = -1
         let timePattern = #/^[Xx]?(\d+:)?\d{1,2}\.\d{2}/#
         for i in stride(from: parts.count - 1, through: 1, by: -1) {
             let p = parts[i].uppercased()
-            if p.hasPrefix("NT") || p.firstMatch(of: timePattern) != nil {
+            if p.hasPrefix("NT") || p.hasPrefix("NS") || p.hasPrefix("SCR") || p.hasPrefix("DQ") || p.firstMatch(of: timePattern) != nil {
                 timeIdx = i
                 break
             }
         }
 
         if timeIdx == -1 { return nil }
-        let seedTime = parseSeedTime(parts[timeIdx])
+        let (seedTime, status) = parseStatusAndSeedTime(parts[timeIdx])
 
         // Find Age/Year. Usually a 1-2 digit number or FR/SO/JR/SR.
         var ageIdx = -1
@@ -409,17 +408,14 @@ struct RegexParser {
 
         // DEBUG TRACE — set isDebugTraceEnabled = true to see token-level detail
         if isDebugTraceEnabled {
-            print("  ENTRY parts=\(parts) timeIdx=\(timeIdx) ageIdx=\(ageIdx) name='\(name)' team='\(teamCode)'")
+            print("  ENTRY parts=\(parts) timeIdx=\(timeIdx) ageIdx=\(ageIdx) name='\(name)' team='\(teamCode)' status=\(status)")
         }
 
         let swimmer = Swimmer(name: name, age: age, teamCode: teamCode)
-        return IndividualEntry(place: place, swimmer: swimmer, seedTime: seedTime)
+        return IndividualEntry(place: place, swimmer: swimmer, seedTime: seedTime, status: status)
     }
 
-
-
     /// Parses a single relay team entry line.
-
     func parseRelayEntry(line: String) -> RelayEntry? {
         // Use whitespacesAndNewlines to strip invisible \r characters from PDFKit
         let parts = line.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
@@ -428,52 +424,61 @@ struct RegexParser {
 
         guard let place = Int(parts[0]) else { return nil }
 
-       
-
         var timeIdx = -1
-
         let timePattern = #/^[Xx]?(\d+:)?\d{1,2}\.\d{2}/#
 
         for i in stride(from: parts.count - 1, through: 1, by: -1) {
-
             let p = parts[i].uppercased()
-
-            if p.hasPrefix("NT") || p.firstMatch(of: timePattern) != nil {
-
+            if p.hasPrefix("NT") || p.hasPrefix("NS") || p.hasPrefix("SCR") || p.hasPrefix("DQ") || p.firstMatch(of: timePattern) != nil {
                 timeIdx = i
-
                 break
-
             }
-
         }
-
-       
 
         if timeIdx == -1 { return nil }
-
-        let seedTime = parseSeedTime(parts[timeIdx])
-
-       
+        let (seedTime, status) = parseStatusAndSeedTime(parts[timeIdx])
 
         // Team name is everything except place and time
-
         var teamParts: [String] = []
-
         for i in 1..<parts.count {
-
             if i == timeIdx { continue }
-
             teamParts.append(parts[i])
-
         }
-
         let teamName = teamParts.joined(separator: " ")
 
-       
+        return RelayEntry(place: place, teamName: teamName, seedTime: seedTime, status: status)
+    }
 
-        return RelayEntry(place: place, teamName: teamName, seedTime: seedTime)
+    /// Parses a seed token string into a seed time and an EntryStatus.
+    func parseStatusAndSeedTime(_ raw: String) -> (TimeInterval, EntryStatus) {
+        var trimmed = raw.trimmingCharacters(in: .whitespaces).uppercased()
 
+        // Remove trailing course indicators
+        for suffix in ["Y", "L", "S", "B"] {
+            if trimmed.hasSuffix(suffix) {
+                trimmed.removeLast()
+                break
+            }
+        }
+
+        if trimmed.hasPrefix("X") { trimmed.removeFirst() }
+
+        if trimmed.hasPrefix("SCR") {
+            return (TimeInterval.infinity, .scratched)
+        }
+        if trimmed.hasPrefix("NS") {
+            return (TimeInterval.infinity, .noShow)
+        }
+        if trimmed.hasPrefix("DQ") {
+            return (TimeInterval.infinity, .disqualified)
+        }
+        if trimmed.hasPrefix("NT") {
+            return (TimeInterval.infinity, .noTime)
+        }
+
+        let time = parseSeedTime(raw)
+        let status: EntryStatus = (time == .infinity) ? .noTime : .seeded
+        return (time, status)
     }
 
 
